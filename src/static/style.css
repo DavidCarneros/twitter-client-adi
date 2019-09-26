@@ -1,7 +1,6 @@
 body {
     font-family: 'Georgia', serif;
     font-size: 16px;
-    margin: 30px;
     padding: 0;
 }
 
@@ -26,6 +25,16 @@ p.error {
     background: #EBCACA;
 }
 
+div {
+    margin: 30px;
+}
+header {
+    background: #00ACEE;
+    color: #FFFFFF;
+    padding-left:  10px;
+    padding-top: 4px;
+}
+
 input {
     font-family: 'Georgia', serif;
     font-size: 16px;
@@ -35,10 +44,19 @@ input {
 }
 
 input[type="submit"] {
-    background: #DADEEB;
-    color: #335E79;
-    border-color: #335E79;
+    background: #00ACEE;
+    color: #FFFFFF;
+    border: none;
+    padding: 5px;
+    margin-top: 5px;
 }
+
+input[type="text"] {
+    padding:8px;
+    border:1px solid #ccc;
+    width:30%
+}
+
 
 h1, h2 {
     font-weight: normal;

@@ -1,22 +1,32 @@
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <!doctype html>
+
 <head>
-<title>Mi Cliente de Twitter</title>
-<link rel=stylesheet type=text/css href="{{ url_for('static',
+  <title>Mi Cliente de Twitter</title>
+  <link rel=stylesheet type=text/css href="{{ url_for('static',
   filename='style.css') }}">
 </head>
+
 <body>
-<h1>Cliente Twitter - Trabajo 1</h1>
-  {% if user %}
-  <a href="{{ url_for('logout') }}"><img src="{{url_for('static', filename='sign-out.png') }}" alt="sign out"></a>
-  {% else %}
-  <a href="{{ url_for('login') }}"><img src="{{url_for('static', filename='sign-in.png') }}" alt="sign in"></a>
-  {% endif %}
+  <header>
+    {% if user %}
+    <a href="{{ url_for('logout') }}" style="float: right; "><img src="{{url_for('static', filename='sign-out.png') }}"
+        alt="sign out"></a>
+    {% else %}
+    <a href="{{ url_for('login') }}" style="float: right; "><img src="{{url_for('static', filename='sign-in.png') }}"
+        alt="sign in"></a>
+    {% endif %}
+    <h1>Cliente Twitter - Trabajo 1</h1>
 
-  
-  # Aqui flashing
+  </header>
+  <hr>
+  <div>
+    # Aqui flashing
+  </div>
 
-  
-{% block body %}{% endblock %}
+
+
+  {% block body %}{% endblock %}
 </body>
+
 </html>
