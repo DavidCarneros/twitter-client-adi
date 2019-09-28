@@ -18,8 +18,8 @@ twitter = oauth.remote_app('twitter',
     request_token_url='https://api.twitter.com/oauth/request_token',
     access_token_url='https://api.twitter.com/oauth/access_token',
     authorize_url='https://api.twitter.com/oauth/authenticate',
-    consumer_key='YOUR-CONSUMER-KEY',
-    consumer_secret='YOUR-CONSUMER-SECRET'
+    consumer_key='YdkRywlj5XBj2OfVmwgXizQ93',
+    consumer_secret='Nn52ohLmK4LHzx0lfDsRymHASYgLirSjdfgaxeGPMO3Qe3Irh9'
 )
 
 
@@ -111,22 +111,36 @@ def follow():
 def tweet():
     # Paso 1: Si no estoy logueado redirigir a pagina de /login
                # Usar currentUser y redirect
-
+    if currentUser is None:
+        return redirect(url_for('login'))
     # Paso 2: Obtener los datos a enviar
                # Usar request (form)
-
+    tweet = request.form['tweetTextPost']
     # Paso 3: Construir el request a enviar con los datos del paso 2
                # Utilizar alguno de los metodos de la instancia twitter (post, request, get, ...)
+    if not tweet:
+        return redirect(url_for('index'))
 
+    response = twitter.post('statuses/update.json', data={
+        'status': tweet
+    })
     # Paso 4: Comprobar que todo fue bien (no hubo errores) e informar al usuario
                # La anterior llamada devuelve el response, mirar el estado (status)
-
+    errorHandler(response)
     # Paso 5: Redirigir a pagina principal (hecho)
     return redirect(url_for('index'))
 
 
-
-
+def errorHandler(response):
+    if response.status == 403:
+        flash("Error: #%d, %s " % (
+            response.data.get('errors')[0].get('code'),
+            response.data.get('errors')[0].get('message'))
+        )
+    elif response.status == 401:
+        flash('Error de autorización.')
+    else:
+        flash('Tweet enviado correctamente, creado con (ID: #%s)' % response.data['id'])
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5005)
