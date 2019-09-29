@@ -6,19 +6,25 @@
     <h3>Post tweet</h3>
     <input type=text name=tweetTextPost size=40 placeholder="What's happening...?"><br>
     <input type=submit value="Tweet">
+  </form>
 
+  <form action="{{ url_for('retweet') }}" method=post>
     <h3>Retweet</h3>
-    <input type=text name=tweetText size=40 placeholder="Tweet ID"><br>
+    <input type=text name=retweetId size=40 placeholder="Tweet ID"><br>
     <input type=submit value="Retweet">
+  </form>
 
+  <form action="{{ url_for('deleteTweet') }}" method=post>
     <h3>Delete tweet</h3>
-    <input type=text name=tweetText size=40 placeholder="Tweet ID"><br>
+    <input type=text name=deleteTweetId size=40 placeholder="Tweet ID"><br>
     <input type=submit value="Delete">
+  </form>
 
+  <form action="{{ url_for('follow') }}" method=post>
     <h3>Follow user</h3>
-    <input type=text name=tweetText size=40 placeholder="User ID">
+    <input type=text name=followUserId size=40 placeholder="User ID">
     <label for="Name">or</label>
-    <input type=text name=tweetText size=40 placeholder="User name"><br>
+    <input type=text name=followUserName size=40 placeholder="User name"><br>
     <input type=submit value="Follow">
   </form>
 
