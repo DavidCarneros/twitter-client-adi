@@ -25,6 +25,12 @@ p.error {
     background: #EBCACA;
 }
 
+p.warning {
+    color: #BA7504;
+    padding: 10px;
+    background: #FFF3CD;
+}
+
 div {
     margin: 30px;
 }
