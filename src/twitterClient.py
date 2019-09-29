@@ -98,6 +98,7 @@ def oauthorized():
 @app.route('/deleteTweet', methods=['POST'])
 def deleteTweet():
     if currentUser is None:
+        flash("Not done because you weren't logged in .Please, try it again", 'error')
         return redirect(url_for('login'))
 
     tweetId = request.form['deleteTweetId']
@@ -122,6 +123,7 @@ def deleteTweet():
 @app.route('/retweet', methods=['POST'])
 def retweet():
     if currentUser is None:
+        flash("Not done because you weren't logged in .Please, try it again", 'error')
         return redirect(url_for('login'))
 
     tweetId = request.form['retweetId']
@@ -145,6 +147,7 @@ def retweet():
 @app.route('/follow', methods=['POST'])
 def follow():
     if currentUser is None:
+        flash("Not done because you weren't logged in .Please, try it again", 'error')
         return redirect(url_for('login'))
 
     userId = request.form['followUserId']
@@ -186,6 +189,7 @@ def tweet():
     # Paso 1: Si no estoy logueado redirigir a pagina de /login
                # Usar currentUser y redirect
     if currentUser is None:
+        flash("Not done because you weren't logged in. Please, try it again", 'error')
         return redirect(url_for('login'))
     # Paso 2: Obtener los datos a enviar
         # Usar request (form)
