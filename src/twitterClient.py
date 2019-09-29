@@ -4,6 +4,9 @@
 from flask import Flask, request, redirect, url_for, flash, render_template,jsonify, make_response
 from flask_oauthlib.client import OAuth
 
+import requests 
+from requests_oauthlib import OAuth1
+
 app = Flask(__name__)
 app.config['DEBUG'] = True
 oauth = OAuth()
@@ -12,14 +15,16 @@ currentUser = None
 
 app.secret_key = 'development'
 
+consumer_key = 'YdkRywlj5XBj2OfVmwgXizQ93'
+consumer_secret = 'Nn52ohLmK4LHzx0lfDsRymHASYgLirSjdfgaxeGPMO3Qe3Irh9'
 
 twitter = oauth.remote_app('twitter',
                            base_url='https://api.twitter.com/1.1/',
                            request_token_url='https://api.twitter.com/oauth/request_token',
                            access_token_url='https://api.twitter.com/oauth/access_token',
                            authorize_url='https://api.twitter.com/oauth/authenticate',
-                           consumer_key='YdkRywlj5XBj2OfVmwgXizQ93',
-                           consumer_secret='Nn52ohLmK4LHzx0lfDsRymHASYgLirSjdfgaxeGPMO3Qe3Irh9'
+                           consumer_key=consumer_key,
+                           consumer_secret=consumer_secret
                            )
 
 
@@ -99,7 +104,15 @@ def deleteTweet():
         flash("ID for 'Delete tweet' operation cannot be empty", 'warning')
         return redirect(url_for('index'))
 
-    response = twitter.post('statuses/destroy/'+tweetId+'.json')
+    url = 'https://api.twitter.com/1.1/statuses/destroy/'+tweetId+'.json'
+    auth = OAuth1(consumer_key,consumer_secret,mySession['oauth_token'],mySession['oauth_token_secret'])
+    headers = {"Accept":"*/*",
+        "Host":"api.twitter.com",
+        "Accept-Encoding":"gzip, deflate"
+    }
+    response = requests.post(url=url,headers=headers,auth=auth)
+
+    #response = twitter.post('statuses/destroy/'+tweetId+'.json')
     errorHandler(response, 'deleteTweet')
 
     return redirect(url_for('index'))
@@ -115,7 +128,14 @@ def retweet():
         flash("ID for 'Retweet' operation cannot be empty", 'warning')
         return redirect(url_for('index'))
 
-    response = twitter.post('statuses/retweet/'+tweetId+'.json')
+    url = 'https://api.twitter.com/1.1/statuses/retweet/'+tweetId+'.json'
+    auth = OAuth1(consumer_key,consumer_secret,mySession['oauth_token'],mySession['oauth_token_secret'])
+    headers = {"Accept":"*/*",
+        "Host":"api.twitter.com",
+        "Accept-Encoding":"gzip, deflate"
+    }
+    #response = twitter.post('statuses/retweet/'+tweetId+'.json')
+    response = requests.post(url=url,headers=headers,auth=auth)
     errorHandler(response, 'retweet')
 
     return redirect(url_for('index'))
@@ -136,15 +156,26 @@ def follow():
         return redirect(url_for('index'))
 
     elif userId:
-        response = twitter.post('friendships/create.json', data={
-            'user_id': userId
-        })
-        errorHandler(response, 'follow')
+        #response = twitter.post('friendships/create.json', data={
+        #    'user_id': userId
+        #})
+        #errorHandler(response, 'follow')
+        params = {'user_id':userId}
     else:
-        response = twitter.post('friendships/create.json', data={
-            'screen_name': userName
-        })
-        errorHandler(response, 'follow')
+        #response = twitter.post('friendships/create.json', data={
+        #    'screen_name': userName
+        #})
+        #errorHandler(response, 'follow')
+        params = {'screen_name':userName}
+
+    url = 'https://api.twitter.com/1.1/friendships/create.json'
+    auth = OAuth1(consumer_key,consumer_secret,mySession['oauth_token'],mySession['oauth_token_secret'])
+    headers = {"Accept":"*/*",
+        "Host":"api.twitter.com",
+        "Accept-Encoding":"gzip, deflate"
+    }
+    response = requests.post(url=url,headers=headers,oauth=oauth,params=params)
+    errorHandler(response,'follow')
 
     return redirect(url_for('index'))
 
@@ -164,9 +195,17 @@ def tweet():
         flash("Tweet for 'Post tweet operation' cannot be empty", 'warning')
         return redirect(url_for('index'))
 
-    response = twitter.post('statuses/update.json', data={
-        'status': tweet
-    })
+    #response = twitter.post('statuses/update.json', data={
+    #    'status': tweet
+    #})
+    url = 'https://api.twitter.com/1.1/statuses/update.json'
+    params = {"status",tweet}
+    headers = {"Accept":"*/*",
+        "Host":"api.twitter.com",
+        "Accept-Encoding":"gzip, deflate",
+    }
+    auth = OAuth1(consumer_key,consumer_secret,mySession['oauth_token'],mySession['oauth_token_secret'])
+    response = requests.post(url=url,headers=headers,auth=auth,params=params)
     # Paso 4: Comprobar que todo fue bien (no hubo errores) e informar al usuario
     # La anterior llamada devuelve el response, mirar el estado (status)
     errorHandler(response, 'tweet')
@@ -175,22 +214,25 @@ def tweet():
 
 
 def errorHandler(response, operation):
-    if response.status == 403:
-        flash("Error: #%d, %s " % (
-            response.data.get('errors')[0].get('code'),
-            response.data.get('errors')[0].get('message')), 'error')
-    elif response.status == 401:
+    if response.status_code == 403:
+        flash('Error', 'error')
+    elif response.status_code == 401:
         flash('Error de autorización', 'error')
+    elif response.status_code == 404:
+        flash('Error, recurso no encontrado','error')
+    elif response.status_code == 500:
+        flash('Error interno del servidor','error')
     else:
+        print(response)
         if operation == 'tweet':
-            flash('Posted Tweet! (ID: #%s)' % response.data['id'], 'success')
+            flash('Posted Tweet! (ID: #%s)' % response.json()['id'], 'success')
         elif operation == 'deleteTweet':
-            flash('Deleted Tweet! (ID: #%s)' % response.data['id'], 'success')
+            flash('Deleted Tweet! (ID: #%s)' % response.json()['id'], 'success')
         elif operation == 'retweet':
             flash('Retweet Tweet Done! (ID: #%s)' %
-                  response.data['id'], 'success')
+                  response.json()['id'], 'success')
         elif operation == 'follow':
-            flash('User (ID: #%s) followed!' % response.data['id'], 'success')
+            flash('User (ID: #%s) followed!' % response.json()['id'], 'success')
 
 
 if __name__ == '__main__':
