@@ -5,6 +5,7 @@ from flask import Flask, request, redirect, url_for, flash, render_template,json
 from flask_oauthlib.client import OAuth
 
 import requests 
+import json
 from requests_oauthlib import OAuth1
 
 app = Flask(__name__)
@@ -58,7 +59,7 @@ def index():
         resp = twitter.request('statuses/home_timeline.json')
         if resp.status == 200:
             tweets = resp.data
-            print(tweets)
+            #print(tweets)
         else:
             flash('Imposible acceder a Twitter.', 'error')
     return render_template('index.html', user=currentUser, tweets=tweets)
@@ -174,7 +175,7 @@ def follow():
         "Host":"api.twitter.com",
         "Accept-Encoding":"gzip, deflate"
     }
-    response = requests.post(url=url,headers=headers,oauth=oauth,params=params)
+    response = requests.post(url=url,headers=headers,auth=auth, params = params)
     errorHandler(response,'follow')
 
     return redirect(url_for('index'))
@@ -198,14 +199,14 @@ def tweet():
     #response = twitter.post('statuses/update.json', data={
     #    'status': tweet
     #})
-    url = 'https://api.twitter.com/1.1/statuses/update.json'
-    params = {"status",tweet}
+    URL = "https://api.twitter.com/1.1/statuses/update.json"
+    params = {"status":tweet}
+    auth = OAuth1(consumer_key, consumer_secret, mySession['oauth_token'], mySession['oauth_token_secret'])
     headers = {"Accept":"*/*",
-        "Host":"api.twitter.com",
-        "Accept-Encoding":"gzip, deflate",
+    "Host":"api.twitter.com",
+    "Accept-Encoding":"gzip, deflate",
     }
-    auth = OAuth1(consumer_key,consumer_secret,mySession['oauth_token'],mySession['oauth_token_secret'])
-    response = requests.post(url=url,headers=headers,auth=auth,params=params)
+    response = requests.post(url=URL,headers=headers,auth=auth,params=params)
     # Paso 4: Comprobar que todo fue bien (no hubo errores) e informar al usuario
     # La anterior llamada devuelve el response, mirar el estado (status)
     errorHandler(response, 'tweet')
