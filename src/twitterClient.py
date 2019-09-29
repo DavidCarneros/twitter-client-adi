@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8; mode: python -*-
 
-from flask import Flask, request, redirect, url_for, flash, render_template
+from flask import Flask, request, redirect, url_for, flash, render_template,jsonify, make_response
 from flask_oauthlib.client import OAuth
 
 app = Flask(__name__)
@@ -53,8 +53,9 @@ def index():
         resp = twitter.request('statuses/home_timeline.json')
         if resp.status == 200:
             tweets = resp.data
+            print(tweets)
         else:
-            flash('Imposible acceder a Twitter.')
+            flash('Imposible acceder a Twitter.', 'error')
     return render_template('index.html', user=currentUser, tweets=tweets)
 
 
@@ -97,7 +98,7 @@ def deleteTweet():
     if not tweetId:
         flash("ID for 'Delete tweet' operation cannot be empty", 'warning')
         return redirect(url_for('index'))
-    
+
     response = twitter.post('statuses/destroy/'+tweetId+'.json')
     errorHandler(response, 'deleteTweet')
 
@@ -113,7 +114,7 @@ def retweet():
     if not tweetId:
         flash("ID for 'Retweet' operation cannot be empty", 'warning')
         return redirect(url_for('index'))
-    
+
     response = twitter.post('statuses/retweet/'+tweetId+'.json')
     errorHandler(response, 'retweet')
 

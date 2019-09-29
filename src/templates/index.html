@@ -27,18 +27,20 @@
     <input type=text name=followUserName size=40 placeholder="User name"><br>
     <input type=submit value="Follow">
   </form>
-
-
 </div>
 
 <hr>
 
-
 <div>
   <h3>Mis tweets</h3>
 
-  # Si hay tweets mostrarlos
-
+  {% if tweets %}  
+  <ul>
+    {% for tuit in tweets %}
+      <li>{{ tuit.id }} - {{ tuit.user.name }} : {{ tuit.text }}</li>
+    {% endfor %}
+    </ul>
+  {%endif %}
 </div>
 
 
