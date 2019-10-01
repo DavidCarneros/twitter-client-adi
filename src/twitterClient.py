@@ -56,31 +56,24 @@ def before_request():
 # Pagina principal
 @app.route('/')
 def index():
-    print('index')
     global currentUser
     global outstandingTransaction
 
     tweets = None
     if currentUser is not None:
         resp = twitter.request('statuses/home_timeline.json')
-        print('index actualiza tweets')
         if resp.status == 200:
-            print('resp.status == 200')
             tweets = resp.data
             if outstandingTransaction['type']:
-                print('executeOutstanding')
                 return executeOutstandingTransaction()
 
         else:
             flash('Imposible acceder a Twitter.', 'error')
-    print('index return template')
     return render_template('index.html', user=currentUser, tweets=tweets)
 
 
 def executeOutstandingTransaction():
     global outstandingTransaction
-    print('executeOutstandingTransaction: operation -> ' +
-          outstandingTransaction['type'])
 
     operation = outstandingTransaction['type']
     parameters = outstandingTransaction['parameters']
@@ -246,12 +239,10 @@ def follow(userId=None, userName=None):
 
 @app.route('/tweet', methods=['POST'])
 def tweet(tweet=None):
-    print('tweet')
     # Paso 1: Si no estoy logueado redirigir a pagina de /login
                # Usar currentUser y redirect
                # Guardamos la petición que el usuario quería hacer en el diccionario global outstandingTransaction
     if currentUser is None:
-        print('tweet function: currentUser is None')
         outstandingTransaction['type'] = 'tweet'
         outstandingTransaction['parameters'] = [
             (request.form['tweetTextPost'] if request.form['tweetTextPost'] else ''), '']
