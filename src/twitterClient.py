@@ -13,6 +13,10 @@ app.config['DEBUG'] = True
 oauth = OAuth()
 mySession = None
 currentUser = None
+outstandingTransaction = {
+    'type': None,
+    'parameters': [None, None]
+}
 
 app.secret_key = 'development'
 
@@ -52,17 +56,46 @@ def before_request():
 # Pagina principal
 @app.route('/')
 def index():
+    print('index')
     global currentUser
+    global outstandingTransaction
 
     tweets = None
     if currentUser is not None:
         resp = twitter.request('statuses/home_timeline.json')
+        print('index actualiza tweets')
         if resp.status == 200:
+            print('resp.status == 200')
             tweets = resp.data
-            #print(tweets)
+            if outstandingTransaction['type']:
+                print('executeOutstanding')
+                return executeOutstandingTransaction()
+
         else:
             flash('Imposible acceder a Twitter.', 'error')
+    print('index return template')
     return render_template('index.html', user=currentUser, tweets=tweets)
+
+
+def executeOutstandingTransaction():
+    global outstandingTransaction
+    print('executeOutstandingTransaction: operation -> ' +
+          outstandingTransaction['type'])
+
+    operation = outstandingTransaction['type']
+    parameters = outstandingTransaction['parameters']
+
+    outstandingTransaction['type'] = None
+    outstandingTransaction['parameters'] = ['', '']
+
+    if operation == 'tweet':
+        return tweet(parameters[0])
+    elif operation == 'retweet':
+        return retweet(parameters[0])
+    elif operation == 'deleteTweet':
+        return deleteTweet(parameters[0])
+    elif operation == 'follow':
+        return follow(parameters[0], parameters[1])
 
 
 # Get auth token (request)
@@ -88,7 +121,7 @@ def oauthorized():
 
     resp = twitter.authorized_response()
     if resp is None:
-        flash('You denied the request to sign in.')
+        flash('You denied the request to sign in.', 'error')
     else:
         mySession = resp
     return redirect(url_for('index', next=request.args.get('next')))
@@ -96,13 +129,20 @@ def oauthorized():
 
 # Operaciones
 @app.route('/deleteTweet', methods=['POST'])
-def deleteTweet():
+def deleteTweet(tweetId=None):
     if currentUser is None:
-        flash("Not done because you weren't logged in .Please, try it again", 'error')
+        outstandingTransaction['type'] = 'deleteTweet'
+        outstandingTransaction['parameters'] = [
+            (request.form['deleteTweetId'] if request.form['deleteTweetId'] else ''), '']
         return redirect(url_for('login'))
 
-    tweetId = request.form['deleteTweetId']
-    if not tweetId:
+    # Get tweetId from HTML if it is not passed as function parameter
+    if tweetId == None:
+        tweetId = request.form['deleteTweetId']
+
+    # Once taken from HTML or function parameters, check if it is None
+    # to show flash warning message or execute the operation
+    if tweetId == '' or not tweetId:
         flash("ID for 'Delete tweet' operation cannot be empty", 'warning')
         return redirect(url_for('index'))
 
@@ -121,13 +161,22 @@ def deleteTweet():
 
 
 @app.route('/retweet', methods=['POST'])
-def retweet():
+def retweet(tweetId=None):
     if currentUser is None:
-        flash("Not done because you weren't logged in .Please, try it again", 'error')
+        outstandingTransaction['type'] = 'retweet'
+        outstandingTransaction['parameters'] = [request.form['retweetId'], '']
+        outstandingTransaction['parameters'] = [
+            (request.form['retweetId'] if request.form['retweetId'] else ''), '']
+
         return redirect(url_for('login'))
 
-    tweetId = request.form['retweetId']
-    if not tweetId:
+    # Get tweetId from HTML if it is not passed as function parameter
+    if tweetId == None:
+        tweetId = request.form['retweetId']
+
+    # Once taken from HTML or function parameters, check if it is None
+    # to show flash warning message or execute the operation
+    if tweetId == '' or not tweetId:
         flash("ID for 'Retweet' operation cannot be empty", 'warning')
         return redirect(url_for('index'))
 
@@ -145,13 +194,24 @@ def retweet():
 
 
 @app.route('/follow', methods=['POST'])
-def follow():
+def follow(userId=None, userName=None):
     if currentUser is None:
-        flash("Not done because you weren't logged in .Please, try it again", 'error')
+        outstandingTransaction['type'] = 'follow'
+        outstandingTransaction['parameters'] = [
+            (request.form['followUserId'] if request.form['followUserId'] else ''), 
+            (request.form['followUserName'] if request.form['followUserName'] else '')]
+
         return redirect(url_for('login'))
 
-    userId = request.form['followUserId']
-    userName = request.form['followUserName']
+    # Get userId and UserName from HTML if they are not passed as function parameter
+    if userId == None:
+        userId = request.form['followUserId']
+
+    if userName == None:
+        userName = request.form['followUserName']
+
+    # Once taken from HTML or function parameters, check if they are None
+    # to show flash warning message or execute the operation
     if not userId and not userName:
         flash("User id or user name must be provided", 'warning')
         return redirect(url_for('index'))
@@ -160,17 +220,17 @@ def follow():
         return redirect(url_for('index'))
 
     elif userId:
-        #response = twitter.post('friendships/create.json', data={
+        # response = twitter.post('friendships/create.json', data={
         #    'user_id': userId
-        #})
+        # })
         #errorHandler(response, 'follow')
-        params = {'user_id':userId}
+        params = {'user_id': userId}
     else:
-        #response = twitter.post('friendships/create.json', data={
+        # response = twitter.post('friendships/create.json', data={
         #    'screen_name': userName
-        #})
+        # })
         #errorHandler(response, 'follow')
-        params = {'screen_name':userName}
+        params = {'screen_name': userName}
 
     url = 'https://api.twitter.com/1.1/friendships/create.json'
     auth = OAuth1(consumer_key,consumer_secret,mySession['oauth_token'],mySession['oauth_token_secret'])
@@ -185,24 +245,36 @@ def follow():
 
 
 @app.route('/tweet', methods=['POST'])
-def tweet():
+def tweet(tweet=None):
+    print('tweet')
     # Paso 1: Si no estoy logueado redirigir a pagina de /login
                # Usar currentUser y redirect
+               # Guardamos la petición que el usuario quería hacer en el diccionario global outstandingTransaction
     if currentUser is None:
-        flash("Not done because you weren't logged in. Please, try it again", 'error')
+        print('tweet function: currentUser is None')
+        outstandingTransaction['type'] = 'tweet'
+        outstandingTransaction['parameters'] = [
+            (request.form['tweetTextPost'] if request.form['tweetTextPost'] else ''), '']
         return redirect(url_for('login'))
+
     # Paso 2: Obtener los datos a enviar
         # Usar request (form)
-    tweet = request.form['tweetTextPost']
-    # Paso 3: Construir el request a enviar con los datos del paso 2
-    # Utilizar alguno de los metodos de la instancia twitter (post, request, get, ...)
-    if not tweet:
+        # Notése que si se está repitiendo una transación desde outstandingTransaction; tweet no será None y no habrá
+        # que coger los datos de entrada. Esto soluciona el problema de que esta transacción incompleta se llama antes de
+        # que index.html haya sido renderizada
+    if tweet == None:
+        tweet = request.form['tweetTextPost']
+
+    if tweet == '' or not tweet:
         flash("Tweet for 'Post tweet operation' cannot be empty", 'warning')
         return redirect(url_for('index'))
 
-    #response = twitter.post('statuses/update.json', data={
+    # Paso 3: Construir el request a enviar con los datos del paso 2
+    # Utilizar alguno de los metodos de la instancia twitter (post, request, get, ...)
+
+    # response = twitter.post('statuses/update.json', data={
     #    'status': tweet
-    #})
+    # })
     URL = "https://api.twitter.com/1.1/statuses/update.json"
     params = {"status":tweet}
     auth = OAuth1(consumer_key, consumer_secret, mySession['oauth_token'], mySession['oauth_token_secret'])
@@ -220,24 +292,25 @@ def tweet():
 
 def errorHandler(response, operation):
     if response.status_code == 403:
-        flash('Error', 'error')
+        flash('403 Forbidden, access is forbidden to the requested page.', 'error')
     elif response.status_code == 401:
-        flash('Error de autorización', 'error')
+        flash('401 Unauthorized', 'error')
     elif response.status_code == 404:
-        flash('Error, recurso no encontrado','error')
+        flash('404 Not Found, the server can not find the requested resource.', 'error')
     elif response.status_code == 500:
-        flash('Error interno del servidor','error')
+        flash('500 Internal Server Error, the request was not completed', 'error')
     else:
-        print(response)
         if operation == 'tweet':
             flash('Posted Tweet! (ID: #%s)' % response.json()['id'], 'success')
         elif operation == 'deleteTweet':
-            flash('Deleted Tweet! (ID: #%s)' % response.json()['id'], 'success')
+            flash('Deleted Tweet! (ID: #%s)' %
+                  response.json()['id'], 'success')
         elif operation == 'retweet':
             flash('Retweet Tweet Done! (ID: #%s)' %
                   response.json()['id'], 'success')
         elif operation == 'follow':
-            flash('User (ID: #%s) followed!' % response.json()['id'], 'success')
+            flash('User (ID: #%s) followed!' %
+                  response.json()['id'], 'success')
 
 
 if __name__ == '__main__':
