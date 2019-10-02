@@ -213,16 +213,8 @@ def follow(userId=None, userName=None):
         return redirect(url_for('index'))
 
     elif userId:
-        # response = twitter.post('friendships/create.json', data={
-        #    'user_id': userId
-        # })
-        #errorHandler(response, 'follow')
         params = {'user_id': userId}
     else:
-        # response = twitter.post('friendships/create.json', data={
-        #    'screen_name': userName
-        # })
-        #errorHandler(response, 'follow')
         params = {'screen_name': userName}
 
     url = 'https://api.twitter.com/1.1/friendships/create.json'
@@ -262,10 +254,6 @@ def tweet(tweet=None):
 
     # Paso 3: Construir el request a enviar con los datos del paso 2
     # Utilizar alguno de los metodos de la instancia twitter (post, request, get, ...)
-
-    # response = twitter.post('statuses/update.json', data={
-    #    'status': tweet
-    # })
     URL = "https://api.twitter.com/1.1/statuses/update.json"
     params = {"status":tweet}
     auth = OAuth1(consumer_key, consumer_secret, mySession['oauth_token'], mySession['oauth_token_secret'])
