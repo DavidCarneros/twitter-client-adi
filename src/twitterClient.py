@@ -20,8 +20,8 @@ outstandingTransaction = {
 
 app.secret_key = 'development'
 
-consumer_key = 'YdkRywlj5XBj2OfVmwgXizQ93'
-consumer_secret = 'Nn52ohLmK4LHzx0lfDsRymHASYgLirSjdfgaxeGPMO3Qe3Irh9'
+consumer_key = ''
+consumer_secret = ''
 
 twitter = oauth.remote_app('twitter',
                            base_url='https://api.twitter.com/1.1/',
